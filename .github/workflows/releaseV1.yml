@@ -1,11 +1,7 @@
-name: JiwuChat CI All
+name: JiwuChat Tauri V1 CI All
 
 on:
-  push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-  workflow_dispatch:
+  workflow_dispatch: # 保留这个触发器以允许手动触发
 
 jobs:
   publish-tauri:
@@ -19,11 +15,8 @@ jobs:
             args: '--target aarch64-apple-darwin'
           - platform: 'macos-latest' # Intel芯片的mac
             args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
-            args: ''
+          - platform: 'ubuntu-20.04' # for Tauri v1 you could replace this with ubuntu-20.04.
           - platform: 'windows-latest'
-            args: ''
-
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -42,11 +35,11 @@ jobs:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
+        if: matrix.platform == 'ubuntu-20.04' # This must match the platform value defined above.
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-        # webkitgtk（libwebkit2gtk-4.0-dev） 4.0 is for Tauri v1  - webkitgtk 4.1 is for Tauri v2. 版本不同，需要安装不同的依赖。
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev
+        # webkitgtk 4.0 is for Tauri v1 - webkitgtk 4.1 is for Tauri v2.
         # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
 
       # 使用 pnpm 作为包管理器
@@ -75,15 +68,15 @@ jobs:
         run: pnpm i && pnpm build:nuxt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
 
       - name: Create Release
-        uses: tauri-apps/tauri-action@v0.5.15
+        uses: tauri-apps/tauri-action@v0.5.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: '🔥 Release v__VERSION__'
